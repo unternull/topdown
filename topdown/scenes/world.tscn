@@ -6,6 +6,7 @@
 [sub_resource type="QuadMesh" id="QuadMesh_e5uuo"]
 
 [node name="World" type="Node2D"]
+y_sort_enabled = true
 
 [node name="MeshInstance2D" type="MeshInstance2D" parent="."]
 modulate = Color(0.17254902, 0.3254902, 0.16862746, 1)

@@ -2,11 +2,11 @@ extends StaticBody2D
 
 @export var hasShadow := true
 
-
 var isBeingPushed := false
 var pushDirection := Vector2.ZERO
 var pushSpeed := 0.0
 @export var friction := 0
+
 
 func _physics_process(delta):
 	if isBeingPushed:
@@ -20,10 +20,12 @@ func _physics_process(delta):
 		else:
 			pushSpeed = 0.0
 
+
 func startPushing(dir: Vector2, force: float):
 	pushDirection = dir
 	pushSpeed = force
 	isBeingPushed = true
+
 
 func stopPushing():
 	isBeingPushed = false

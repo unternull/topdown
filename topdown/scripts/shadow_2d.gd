@@ -6,12 +6,14 @@ extends Node2D
 var _sprite: CanvasItem = null
 var _size: Vector2 = Vector2.ZERO
 
+
 func _ready() -> void:
 	z_as_relative = false
 	z_index = z_index_absolute
 	_sprite = _find_sprite_owner()
 	_update_from_sprite()
 	_connect_sprite_signals()
+
 
 func _draw() -> void:
 	if _size == Vector2.ZERO:
@@ -20,6 +22,7 @@ func _draw() -> void:
 	var ry: float = max(_size.y * 0.5, 1.0)
 	var pts := _ellipse_points(rx, ry, 32)
 	draw_colored_polygon(pts, color)
+
 
 func _ellipse_points(rx: float, ry: float, segments: int) -> PackedVector2Array:
 	var pts := PackedVector2Array()
@@ -30,6 +33,7 @@ func _ellipse_points(rx: float, ry: float, segments: int) -> PackedVector2Array:
 		pts[i] = Vector2(cos(t) * rx, sin(t) * ry)
 	return pts
 
+
 func _find_sprite_owner() -> CanvasItem:
 	# Prefer AnimatedSprite2D, then Sprite2D
 	for n in get_parent().get_children():
@@ -39,6 +43,7 @@ func _find_sprite_owner() -> CanvasItem:
 		if n is Sprite2D:
 			return n
 	return null
+
 
 func _update_from_sprite() -> void:
 	if _sprite == null:
@@ -98,6 +103,7 @@ func _update_from_sprite() -> void:
 
 	queue_redraw()
 
+
 func _connect_sprite_signals() -> void:
 	if _sprite == null:
 		return
@@ -110,6 +116,7 @@ func _connect_sprite_signals() -> void:
 	elif _sprite is Sprite2D:
 		var s := _sprite as Sprite2D
 		s.texture_changed.connect(_on_sprite_changed)
+
 
 func _on_sprite_changed() -> void:
 	_update_from_sprite()

@@ -27,14 +27,14 @@ func _physics_process(_delta: float) -> void:
 		staysBack = true
 	if inputDir == Vector2.DOWN:
 		staysBack = false
-	
+
 	var isDirectionChanged = lastDirection != inputDir
-	
+
 	lastDirection = inputDir
-	
+
 	velocity = inputDir * SPEED
 	move_and_slide()
-	
+
 	if isDirectionChanged:
 		stopPushingItems()
 
@@ -61,36 +61,38 @@ func checkAndPushItems(inputDir: Vector2):
 				isPushing = true
 				currentPushedItem = collider
 
+
 func stopPushingItems():
 	if isPushing:
 		if currentPushedItem and currentPushedItem.has_method("stopPushing"):
 			currentPushedItem.stopPushing()
 			isPushing = false
 
+
 func _process(delta: float) -> void:
 	var playerState = directionToPlayerState(lastDirection)
 
 	match playerState:
 		PlayerState.WalkingUp:
-			if $PlayerBody.animation != 'WalkingUp':
-				$PlayerBody.animation = 'WalkingUp'
+			if $PlayerBody.animation != "WalkingUp":
+				$PlayerBody.animation = "WalkingUp"
 		PlayerState.WalkingDown:
-			if $PlayerBody.animation != 'WalkingDown':
-				$PlayerBody.animation = 'WalkingDown'
+			if $PlayerBody.animation != "WalkingDown":
+				$PlayerBody.animation = "WalkingDown"
 		PlayerState.WalkingLeft:
-			if $PlayerBody.animation != 'WalkingSide':
-				$PlayerBody.animation = 'WalkingSide'
+			if $PlayerBody.animation != "WalkingSide":
+				$PlayerBody.animation = "WalkingSide"
 				$PlayerBody.flip_h = true
 		PlayerState.WalkingRight:
-			if $PlayerBody.animation != 'WalkingSide':
-				$PlayerBody.animation = 'WalkingSide'
+			if $PlayerBody.animation != "WalkingSide":
+				$PlayerBody.animation = "WalkingSide"
 				$PlayerBody.flip_h = false
 		PlayerState.IdleFront:
-			if $PlayerBody.animation != 'IdleFront':
-				$PlayerBody.animation = 'IdleFront'
+			if $PlayerBody.animation != "IdleFront":
+				$PlayerBody.animation = "IdleFront"
 		PlayerState.IdleBack:
-			if $PlayerBody.animation != 'IdleBack':
-				$PlayerBody.animation = 'IdleBack'
+			if $PlayerBody.animation != "IdleBack":
+				$PlayerBody.animation = "IdleBack"
 
 
 func getInputDirection() -> Vector2:
@@ -114,7 +116,5 @@ func directionToPlayerState(dir: Vector2) -> PlayerState:
 		return PlayerState.WalkingLeft
 	if staysBack:
 		return PlayerState.IdleBack
-		
-	return PlayerState.IdleFront
 
-	
+	return PlayerState.IdleFront

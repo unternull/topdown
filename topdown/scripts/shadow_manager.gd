@@ -1,8 +1,10 @@
 extends Node
 
+
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
 	_scan_tree(get_tree().current_scene)
+
 
 func _scan_tree(root: Node) -> void:
 	if root == null:
@@ -11,8 +13,10 @@ func _scan_tree(root: Node) -> void:
 	for c in root.get_children():
 		_scan_tree(c)
 
+
 func _on_node_added(n: Node) -> void:
 	_try_attach_shadow(n)
+
 
 func _try_attach_shadow(n: Node) -> void:
 	var wants := false

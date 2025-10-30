@@ -16,6 +16,20 @@ func _initialize_grid() -> void:
 	_snap_actors_to_grid()
 	_center_player()
 	_build_occupancy()
+	_apply_camera_limits()
+
+## Clamp the player camera to the playable area derived from Grid
+func _apply_camera_limits() -> void:
+	var cam: Camera2D = get_node_or_null("Player/Camera2D")
+	if cam == null:
+		return
+	var w: int = Grid.grid_size.x * Grid.CELL_SIZE
+	var h: int = Grid.grid_size.y * Grid.CELL_SIZE
+	cam.limit_left = int(Grid.origin.x)
+	cam.limit_top = int(Grid.origin.y)
+	cam.limit_right = int(Grid.origin.x) + w
+	cam.limit_bottom = int(Grid.origin.y) + h
+	cam.enabled = true
 
 func _build_occupancy() -> void:
 	occupancy.clear()

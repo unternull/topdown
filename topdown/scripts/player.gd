@@ -46,12 +46,15 @@ func checkAndPushItems(inputDir: Vector2):
 	if isPushing:
 		return
 
-	$RayCast.target_position = inputDir * 30
-	$RayCast.force_raycast_update()
-	if $RayCast.is_colliding():
-		var collider: CollisionObject2D = $RayCast.get_collider()
-		if collider and collider.has_method("startPushing"):
-			if not isPushing:
+	var ray = $RayCast
+	ray.target_position = inputDir * 12
+	ray.force_raycast_update()
+	if ray.is_colliding():
+		var normal: Vector2 = ray.get_collision_normal()
+		# Only push when the collided surface faces the player (near back-to-back contact)
+		if normal.dot(inputDir) <= -0.95:
+			var collider: CollisionObject2D = ray.get_collider()
+			if collider and collider.has_method("startPushing") and not isPushing:
 				collider.startPushing(inputDir, pushForce)
 				isPushing = true
 				currentPushedItem = collider

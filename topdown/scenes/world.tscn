@@ -8,6 +8,9 @@
 [node name="World" type="Node2D"]
 y_sort_enabled = true
 
+[node name="Player" parent="." instance=ExtResource("2_rwgxs")]
+position = Vector2(507, 373)
+
 [node name="MeshInstance2D" type="MeshInstance2D" parent="."]
 modulate = Color(0.17254902, 0.3254902, 0.16862746, 1)
 position = Vector2(572, 332.5)
@@ -22,6 +25,3 @@ position = Vector2(112, 83)
 
 [node name="Box3" parent="." instance=ExtResource("1_nnsk1")]
 position = Vector2(659, 52)
-
-[node name="Player" parent="Box3" instance=ExtResource("2_rwgxs")]
-position = Vector2(-152, 321)

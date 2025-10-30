@@ -54,38 +54,47 @@ func _update_from_sprite() -> void:
 	var rect_size := Vector2.ZERO
 	var local_scale := Vector2.ONE
 	var local_pos := Vector2.ZERO
+	var valid := true
 
 	if _sprite is AnimatedSprite2D:
 		var animated_sprite := _sprite as AnimatedSprite2D
 		if animated_sprite.sprite_frames == null:
-			return
-		var anim := String(animated_sprite.animation)
-		if anim == "" or not animated_sprite.sprite_frames.has_animation(anim):
-			return
-		var frame_count := animated_sprite.sprite_frames.get_frame_count(anim)
-		if frame_count <= 0:
-			return
-		var frm: int = clamp(animated_sprite.frame, 0, frame_count - 1)
-		var tex := animated_sprite.sprite_frames.get_frame_texture(anim, frm)
-		if tex == null:
-			return
-		rect_size = tex.get_size()
-		var centered := animated_sprite.centered
-		var offset := animated_sprite.offset
-		rect_pos = (-rect_size * 0.5 + offset) if centered else offset
-		local_scale = animated_sprite.scale.abs()
-		local_pos = animated_sprite.position
+			valid = false
+		else:
+			var anim := String(animated_sprite.animation)
+			if anim == "" or not animated_sprite.sprite_frames.has_animation(anim):
+				valid = false
+			else:
+				var frame_count := animated_sprite.sprite_frames.get_frame_count(anim)
+				if frame_count <= 0:
+					valid = false
+				else:
+					var frm: int = clamp(animated_sprite.frame, 0, frame_count - 1)
+					var tex := animated_sprite.sprite_frames.get_frame_texture(anim, frm)
+					if tex == null:
+						valid = false
+					else:
+						rect_size = tex.get_size()
+						var centered := animated_sprite.centered
+						var offset := animated_sprite.offset
+						rect_pos = (-rect_size * 0.5 + offset) if centered else offset
+						local_scale = animated_sprite.scale.abs()
+						local_pos = animated_sprite.position
 	elif _sprite is Sprite2D:
 		var s := _sprite as Sprite2D
 		if s.texture == null:
-			return
-		rect_size = s.texture.get_size()
-		var centered_s := s.centered
-		var offset_s := s.offset
-		rect_pos = (-rect_size * 0.5 + offset_s) if centered_s else offset_s
-		local_scale = s.scale.abs()
-		local_pos = s.position
+			valid = false
+		else:
+			rect_size = s.texture.get_size()
+			var centered_s := s.centered
+			var offset_s := s.offset
+			rect_pos = (-rect_size * 0.5 + offset_s) if centered_s else offset_s
+			local_scale = s.scale.abs()
+			local_pos = s.position
 	else:
+		valid = false
+
+	if not valid:
 		return
 
 	var scaled_size := rect_size * local_scale
@@ -110,9 +119,9 @@ func _connect_sprite_signals() -> void:
 	# Update when the drawn rect changes (covers many sprite changes)
 	_sprite.item_rect_changed.connect(_on_sprite_changed)
 	if _sprite is AnimatedSprite2D:
-		var animatedSprite := _sprite as AnimatedSprite2D
-		animatedSprite.frame_changed.connect(_on_sprite_changed)
-		animatedSprite.sprite_frames_changed.connect(_on_sprite_changed)
+		var animated_sprite := _sprite as AnimatedSprite2D
+		animated_sprite.frame_changed.connect(_on_sprite_changed)
+		animated_sprite.sprite_frames_changed.connect(_on_sprite_changed)
 	elif _sprite is Sprite2D:
 		var s := _sprite as Sprite2D
 		s.texture_changed.connect(_on_sprite_changed)

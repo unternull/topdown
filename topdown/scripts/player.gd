@@ -1,7 +1,5 @@
 extends CharacterBody2D
 
-const WALK_SPEED := 480.0
-
 enum PlayerState {
 	WALKING_DOWN,
 	WALKING_UP,
@@ -10,6 +8,8 @@ enum PlayerState {
 	IDLE_FRONT,
 	IDLE_BACK,
 }
+
+const WALK_SPEED := 480.0
 
 @export var has_shadow := true
 

@@ -250,20 +250,21 @@ z_index = 1
 scale = Vector2(4, 4)
 motion_mode = 1
 script = ExtResource("1_3vyb7")
+hasShadow = null
 
 [node name="PlayerBody" type="AnimatedSprite2D" parent="."]
-position = Vector2(-31.25, -19.5)
+position = Vector2(0, 0)
 scale = Vector2(1.859375, 2)
 sprite_frames = SubResource("SpriteFrames_487ah")
 animation = &"IdleBack"
 autoplay = "IdleFront"
-centered = false
-offset = Vector2(0, 32)
+centered = true
+offset = Vector2(0, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 z_index = 1
 y_sort_enabled = true
-position = Vector2(-2.75, 81.25)
+position = Vector2(0, 0)
 scale = Vector2(4, 4)
 shape = SubResource("CapsuleShape2D_g2els")
 

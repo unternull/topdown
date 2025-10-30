@@ -1,5 +1,7 @@
 extends StaticBody2D
 
+@export var hasShadow := true
+
 
 var isBeingPushed := false
 var pushDirection := Vector2.ZERO

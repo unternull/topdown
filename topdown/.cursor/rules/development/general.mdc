@@ -1,0 +1,89 @@
+---
+description: General development rules for a Godot (4.x) top-down project
+globs:
+- scripts/**/*.gd
+- scenes/**/*.gd
+- scenes/**/*.tscn
+- addons/**/*.gd
+- project.godot
+alwaysApply: true
+---
+# GDScript Style
+- Prefer static typing everywhere; avoid `Variant`.
+- Use meaningful names; avoid cryptic abbreviations.
+- Naming:
+  - Classes/Nodes: PascalCase (e.g., `PlayerController`)
+  - Variables/Functions/Signals: camelCase (e.g., `pushForce`, `startPushing`)
+  - Constants/Enums: SCREAMING_SNAKE_CASE (e.g., `MAX_SPEED`)
+- Avoid reserved words as identifiers (e.g., don’t name a variable `as`, `in`, `or`, `and`).
+- Prefer early returns to reduce nesting; keep functions focused and small.
+- Comment “why”, not “what”; prefer doc comments using `##` above functions/props.
+- Use tab indentation, do not use space indentation
+
+# Node Access & Structure
+- Cache children with typed `@onready` vars; avoid repeated `$`/`get_node` in hot paths.
+- Prefer `%NodeName` over long NodePaths; keep node names stable.
+- Composition over inheritance; keep scripts small and scene-focused.
+- Use `autoload` singletons for cross-cutting systems (e.g., `ShadowManager`, `AudioBus`).
+
+## Lifecycle & Loops
+- Physics and movement in `_physics_process(delta)`; visuals/animation in `_process(delta)`.
+- Connect signals in `_ready()`; avoid side effects in `_init()`.
+- Don’t allocate or load resources in per-frame loops; preload or cache.
+- Disable processing when not needed (`set_process(false)`, `set_physics_process(false)`).
+
+## Signals > Tight Coupling
+- Prefer signals to call-into-children/parents directly.
+- Never free nodes while iterating their parents’ children; use `call_deferred("queue_free")`.
+
+## Input & Movement
+- Use input actions; no hard-coded keycodes.
+- Use `Input.get_vector("move_left","move_right","move_up","move_down")` and normalize.
+- Units: pixels; velocities in pixels/sec; accelerations in pixels/sec^2.
+
+## Scenes & Sorting (Top-Down)
+- Use a `Node2D` or `YSort`-like parent with `y_sort_enabled = true`.
+- Avoid overriding per-child `z_index`; if you must, set `z_as_relative = false`.
+- Align `y_sort_origin` to the character’s feet.
+- Keep collision shapes aligned to feet; visual sprites may be offset upward.
+
+## Collisions
+- Maintain a documented layer/mask mapping.
+- Keep collision shapes tight; avoid oversized shapes for visuals.
+- Never move `StaticBody2D` via transform; if movable, use `CharacterBody2D`/`RigidBody2D`/Kinematic pattern.
+
+## Resources & Loading
+- Use `preload()` for hot paths; use `load()` for rare/async.
+- Keep config in `.tres`/`.res` resources; avoid magic numbers.
+- Prefer `.tscn` scenes for version control.
+
+## Performance
+- Avoid allocations in `_process`/`_physics_process` (e.g., new arrays/strings each frame).
+- Pool frequently spawned nodes; reuse when possible.
+- Profile with the built-in profiler; fix hotspots before micro-optimizing.
+
+## Rendering & Art (Pixel Art)
+- Default texture filter: Nearest; disable mipmaps unless needed.
+- Snap positions to integers for crisp pixel art if required by style.
+- For top-down shadows, render dedicated shadow nodes with absolute z below props (no baked shadows in character sprites).
+
+## Project Organization
+- Mirror scene and script names/locations (e.g., `scenes/player.tscn` ↔ `scripts/player.gd`).
+- One responsibility per scene; compose via child scenes (no god-objects).
+- Keep autoloads minimal and focused; document responsibilities.
+
+## Testing & Tooling
+- Keep a tiny test room scene for quick iteration.
+- Log with categories; remove noisy prints before commit.
+- Treat warnings as errors; keep the output clean.
+
+## Git & Review
+- No binary assets in code review without reason; keep sources committed.
+- Small, focused PRs; include rationale and testing notes.
+- Don’t commit editor-generated caches; commit `.tscn`, `.gd`, `.import` states as needed.
+
+## Do/Don’t Quick Rules
+- Do: use exports (`@export`) for tunables; keep defaults sane.
+- Do: prefer signals and data-driven flows.
+- Don’t: depend on fragile NodePaths; stabilize node names or use exported NodePaths.
+- Don’t: use frame atlas size to infer visual size; account for `centered` and `offset`.

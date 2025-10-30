@@ -2,6 +2,8 @@ extends CharacterBody2D
 
 const SPEED = 300.0
 
+@export var hasShadow := true
+
 @export var pushForce := 100.0
 
 var lastDirection = Vector2.ZERO

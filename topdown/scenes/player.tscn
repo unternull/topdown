@@ -257,7 +257,6 @@ scale = Vector2(1.859375, 2)
 sprite_frames = SubResource("SpriteFrames_487ah")
 animation = &"IdleBack"
 autoplay = "IdleFront"
-frame_progress = 0.42032155
 centered = false
 offset = Vector2(0, 32)
 

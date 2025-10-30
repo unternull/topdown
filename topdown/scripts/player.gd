@@ -23,11 +23,13 @@ var tween: Tween
 
 @onready var Grid: Node = get_node("/root/Grid")
 
+
 func _ready() -> void:
 	add_to_group("grid_actor")
 	add_to_group("player")
 	position = Grid.snap_to_cell(position)
 	target_cell = Grid.world_to_cell(position)
+
 
 func _physics_process(_delta: float) -> void:
 	held_dir = _input_dir_to_cardinal()
@@ -40,6 +42,7 @@ func _physics_process(_delta: float) -> void:
 		_try_step(held_dir)
 
 	lastDirection = Vector2(held_dir.x, held_dir.y)
+
 
 func _process(_delta: float) -> void:
 	var playerState = directionToPlayerState(lastDirection)
@@ -65,6 +68,7 @@ func _process(_delta: float) -> void:
 			if $PlayerBody.animation != "IdleBack":
 				$PlayerBody.animation = "IdleBack"
 
+
 func _input_dir_to_cardinal() -> Vector2i:
 	var raw := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if abs(raw.x) > abs(raw.y):
@@ -72,6 +76,7 @@ func _input_dir_to_cardinal() -> Vector2i:
 	elif abs(raw.y) > 0.0:
 		return Vector2i(0, sign(raw.y))
 	return Vector2i.ZERO
+
 
 func _try_step(dir: Vector2i) -> void:
 	var world := get_tree().current_scene
@@ -96,6 +101,7 @@ func _try_step(dir: Vector2i) -> void:
 			return
 		_start_move(from, to)
 
+
 func _start_move(from: Vector2i, to: Vector2i) -> void:
 	var world := get_tree().current_scene
 	if "move_actor" in world:
@@ -111,10 +117,12 @@ func _start_move(from: Vector2i, to: Vector2i) -> void:
 	tween.tween_property(self, "position", dst, max(0.01, dur))
 	tween.finished.connect(_on_step_finished)
 
+
 func _on_step_finished() -> void:
 	moving = false
 	if held_dir != Vector2i.ZERO:
 		_try_step(held_dir)
+
 
 func directionToPlayerState(dir: Vector2) -> PlayerState:
 	if dir.y > 0:

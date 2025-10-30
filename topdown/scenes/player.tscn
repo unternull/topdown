@@ -250,7 +250,7 @@ z_index = 1
 scale = Vector2(4, 4)
 motion_mode = 1
 script = ExtResource("1_3vyb7")
-hasShadow = null
+has_shadow = null
 
 [node name="PlayerBody" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, 0)

@@ -243,7 +243,7 @@ animations = [{
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_g2els"]
 radius = 2.0625
-height = 8.25
+height = 4.375
 
 [node name="Player" type="CharacterBody2D"]
 z_index = 1
@@ -257,12 +257,13 @@ scale = Vector2(1.859375, 2)
 sprite_frames = SubResource("SpriteFrames_487ah")
 animation = &"IdleBack"
 autoplay = "IdleFront"
-frame_progress = 0.42032155
 centered = false
 offset = Vector2(0, 32)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-2.5, 72.25)
+z_index = 1
+y_sort_enabled = true
+position = Vector2(-2.75, 81.25)
 scale = Vector2(4, 4)
 shape = SubResource("CapsuleShape2D_g2els")
 

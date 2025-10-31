@@ -1,8 +1,11 @@
 extends Node2D
 
+signal family_sets_changed(family: String, row_sets: Array, col_sets: Array)
+
 @export var grid_size := Vector2i(8, 5)
 
 var occupancy := {}  # Dictionary keyed by Vector2i -> Node
+var family_sets := {}
 
 @onready var grid: Node = get_node("/root/Grid")
 
@@ -42,6 +45,12 @@ func _build_occupancy() -> void:
 			var cell: Vector2i = grid.world_to_cell(child.position)
 			if grid.in_bounds(cell):
 				occupancy[cell] = child
+				var fam := _get_familiar(child)
+				if fam:
+					fam.family_counter_changed.connect(_on_family_counter_changed.bind(child))
+
+	_recompute_all_counts()
+	_rebuild_all_family_sets()
 
 
 func _snap_actors_to_grid() -> void:
@@ -81,3 +90,227 @@ func move_actor(from: Vector2i, to: Vector2i, node: Node) -> void:
 	if occupancy.has(from):
 		occupancy.erase(from)
 	occupancy[to] = node
+	_recompute_row(from.y)
+	_recompute_row(to.y)
+	_recompute_col(from.x)
+	_recompute_col(to.x)
+	_rebuild_all_family_sets()
+
+
+func _get_familiar(n: Node) -> Node:
+	return n.get_node_or_null("Familiar")
+
+
+func _actor_families(n: Node) -> Array[String]:
+	var f := _get_familiar(n)
+	if f == null:
+		return []
+	return f.families as Array[String]
+
+
+func _has_family(n: Node, family: String) -> bool:
+	var f := _get_familiar(n)
+	return f != null and f.has_family(family)
+
+
+func _recompute_all_counts() -> void:
+	for y in range(grid.grid_size.y):
+		_recompute_row(y)
+	for x in range(grid.grid_size.x):
+		_recompute_col(x)
+
+
+func _recompute_row(y: int) -> void:
+	for x in range(grid.grid_size.x):
+		var n := occupancy.get(Vector2i(x, y)) as Node
+		if n == null:
+			continue
+		var fams := _actor_families(n)
+		if fams.is_empty():
+			continue
+		for fam in fams:
+			var len := (
+				_run_length(Vector2i(x, y), Vector2i(-1, 0), fam)
+				+ 1
+				+ _run_length(Vector2i(x, y), Vector2i(1, 0), fam)
+			)
+			var f := _get_familiar(n)
+			f.set_family_count(fam, len)
+
+
+func _recompute_col(x: int) -> void:
+	for y in range(grid.grid_size.y):
+		var n := occupancy.get(Vector2i(x, y)) as Node
+		if n == null:
+			continue
+		var fams := _actor_families(n)
+		if fams.is_empty():
+			continue
+		for fam in fams:
+			var len := (
+				_run_length(Vector2i(x, y), Vector2i(0, -1), fam)
+				+ 1
+				+ _run_length(Vector2i(x, y), Vector2i(0, 1), fam)
+			)
+			var f := _get_familiar(n)
+			var current := int(f.family_counters.get(fam, 1))
+			f.set_family_count(fam, max(current, len))
+
+
+func _run_length(from: Vector2i, dir: Vector2i, family: String) -> int:
+	var c := 0
+	var cur := from + dir
+	while grid.in_bounds(cur):
+		var n := occupancy.get(cur) as Node
+		if n == null or not _has_family(n, family):
+			break
+		c += 1
+		cur += dir
+	return c
+
+
+func _on_family_counter_changed(family: String, _count: int, owner: Node) -> void:
+	# Locate owner's grid cell
+	var owner_cell := Vector2i(-1, -1)
+	for c in occupancy.keys():
+		var n := occupancy.get(c) as Node
+		if n == owner:
+			owner_cell = c
+			break
+	if owner_cell.x < 0:
+		return
+
+	# Row set: print only if at left edge (no same-family to the left), compute size on the fly
+	var left: Vector2i = owner_cell + Vector2i(-1, 0)
+	var left_node: Node = occupancy.get(left) as Node
+	if left_node == null or not _has_family(left_node, family):
+		var row_len := _run_length(owner_cell, Vector2i(1, 0), family) + 1
+		if row_len > 1:
+			print(family, ": ", row_len)
+			return
+
+	# Column set: print only if at top edge (no same-family above), compute size on the fly
+	var up: Vector2i = owner_cell + Vector2i(0, -1)
+	var up_node: Node = occupancy.get(up) as Node
+	if up_node == null or not _has_family(up_node, family):
+		var col_len := _run_length(owner_cell, Vector2i(0, 1), family) + 1
+		if col_len > 1:
+			print(family, ": ", col_len)
+			return
+
+
+func _discover_families() -> Array[String]:
+	var all := {}
+	for c in occupancy.keys():
+		var n := occupancy.get(c) as Node
+		if n == null:
+			continue
+		for fam in _actor_families(n):
+			all[fam] = true
+	var all_keys: Array[String] = []
+	for k in all.keys():
+		all_keys.append(String(k))
+	return all_keys
+
+
+func _collect_set_nodes(cells: Array[Vector2i]) -> Array:
+	var nodes := []
+	for c in cells:
+		var n := occupancy.get(c) as Node
+		if n != null:
+			nodes.push_back(n)
+	return nodes
+
+
+func _collect_set_aabb(cells: Array[Vector2i]) -> Rect2i:
+	if cells.is_empty():
+		return Rect2i()
+	var min_x: int = cells[0].x
+	var max_x: int = cells[0].x
+	var min_y: int = cells[0].y
+	var max_y: int = cells[0].y
+	for c in cells:
+		if c.x < min_x:
+			min_x = c.x
+		if c.x > max_x:
+			max_x = c.x
+		if c.y < min_y:
+			min_y = c.y
+		if c.y > max_y:
+			max_y = c.y
+	return Rect2i(Vector2i(min_x, min_y), Vector2i(max_x - min_x + 1, max_y - min_y + 1))
+
+
+func _finalize_set(id: int, family: String, axis: String, cells: Array[Vector2i]) -> Dictionary:
+	return {
+		"id": id,
+		"family": family,
+		"axis": axis,
+		"cells": cells,
+		"nodes": _collect_set_nodes(cells),
+		"size": cells.size(),
+		"aabb": _collect_set_aabb(cells),
+	}
+
+
+func _build_row_sets_for(family: String) -> Array:
+	var sets := []
+	var next_id := 0
+	for y in range(grid.grid_size.y):
+		var run: Array[Vector2i] = []
+		for x in range(grid.grid_size.x):
+			var c := Vector2i(x, y)
+			var n := occupancy.get(c) as Node
+			if n != null and _has_family(n, family):
+				run.append(c)
+			else:
+				if run.size() > 0:
+					sets.push_back(_finalize_set(next_id, family, "row", run))
+					next_id += 1
+					run = []
+		if run.size() > 0:
+			sets.push_back(_finalize_set(next_id, family, "row", run))
+			next_id += 1
+	return sets
+
+
+func _build_col_sets_for(family: String) -> Array:
+	var sets := []
+	var next_id := 0
+	for x in range(grid.grid_size.x):
+		var run: Array[Vector2i] = []
+		for y in range(grid.grid_size.y):
+			var c := Vector2i(x, y)
+			var n := occupancy.get(c) as Node
+			if n != null and _has_family(n, family):
+				run.append(c)
+			else:
+				if run.size() > 0:
+					sets.push_back(_finalize_set(next_id, family, "col", run))
+					next_id += 1
+					run = []
+		if run.size() > 0:
+			sets.push_back(_finalize_set(next_id, family, "col", run))
+			next_id += 1
+	return sets
+
+
+func _rebuild_all_family_sets() -> void:
+	var families := _discover_families()
+	for fam in families:
+		var rows := _build_row_sets_for(fam)
+		var cols := _build_col_sets_for(fam)
+		family_sets[fam] = {
+			"row_sets": rows,
+			"col_sets": cols,
+		}
+		family_sets_changed.emit(fam, rows, cols)
+		#print("%s: rows=%d, cols=%d" % [fam, rows.size(), cols.size()])
+
+
+func get_family_sets() -> Dictionary:
+	return family_sets
+
+
+func get_family_sets_for(family: String) -> Dictionary:
+	return family_sets.get(family, {})

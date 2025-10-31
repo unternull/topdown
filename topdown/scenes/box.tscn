@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://dhkhtajmiau22"]
+[gd_scene load_steps=6 format=3 uid="uid://dhkhtajmiau22"]
 
 [ext_resource type="Texture2D" uid="uid://c3bwrojsqk5ad" path="res://assets/simple_block.png" id="1_3inec"]
 [ext_resource type="Script" uid="uid://dawfg75rptdmc" path="res://scenes/box.gd" id="1_ks2v0"]
+[ext_resource type="Script" path="res://scripts/familiar.gd" id="3_fam1"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_ks2v0"]
 rough = true
@@ -21,3 +22,7 @@ texture = ExtResource("1_3inec")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, 0)
 shape = SubResource("RectangleShape2D_3inec")
+
+[node name="Familiar" type="Node" parent="."]
+script = ExtResource("3_fam1")
+families = ["brown"]

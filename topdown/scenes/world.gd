@@ -42,6 +42,11 @@ func _build_occupancy() -> void:
 			var cell: Vector2i = grid.world_to_cell(child.position)
 			if grid.in_bounds(cell):
 				occupancy[cell] = child
+				var fam := _get_familiar(child)
+				if fam:
+					fam.family_counter_changed.connect(_on_family_counter_changed.bind(child))
+
+	_recompute_all_counts()
 
 
 func _snap_actors_to_grid() -> void:
@@ -81,3 +86,75 @@ func move_actor(from: Vector2i, to: Vector2i, node: Node) -> void:
 	if occupancy.has(from):
 		occupancy.erase(from)
 	occupancy[to] = node
+	_recompute_row(from.y)
+	_recompute_row(to.y)
+	_recompute_col(from.x)
+	_recompute_col(to.x)
+
+
+func _get_familiar(n: Node) -> Node:
+	return n.get_node_or_null("Familiar")
+
+
+func _actor_families(n: Node) -> Array[String]:
+	var f := _get_familiar(n)
+	if f == null:
+		return []
+	return f.families as Array[String]
+
+
+func _has_family(n: Node, family: String) -> bool:
+	var f := _get_familiar(n)
+	return f != null and f.has_family(family)
+
+
+func _recompute_all_counts() -> void:
+	for y in range(grid.grid_size.y):
+		_recompute_row(y)
+	for x in range(grid.grid_size.x):
+		_recompute_col(x)
+
+
+func _recompute_row(y: int) -> void:
+	for x in range(grid.grid_size.x):
+		var n := occupancy.get(Vector2i(x, y)) as Node
+		if n == null:
+			continue
+		var fams := _actor_families(n)
+		if fams.is_empty():
+			continue
+		for fam in fams:
+			var len := _run_length(Vector2i(x, y), Vector2i(-1, 0), fam) + 1 + _run_length(Vector2i(x, y), Vector2i(1, 0), fam)
+			var f := _get_familiar(n)
+			f.set_family_count(fam, len)
+
+
+func _recompute_col(x: int) -> void:
+	for y in range(grid.grid_size.y):
+		var n := occupancy.get(Vector2i(x, y)) as Node
+		if n == null:
+			continue
+		var fams := _actor_families(n)
+		if fams.is_empty():
+			continue
+		for fam in fams:
+			var len := _run_length(Vector2i(x, y), Vector2i(0, -1), fam) + 1 + _run_length(Vector2i(x, y), Vector2i(0, 1), fam)
+			var f := _get_familiar(n)
+			var current := int(f.familyCounters.get(fam, 1))
+			f.set_family_count(fam, max(current, len))
+
+
+func _run_length(from: Vector2i, dir: Vector2i, family: String) -> int:
+	var c := 0
+	var cur := from + dir
+	while grid.in_bounds(cur):
+		var n := occupancy.get(cur) as Node
+		if n == null or not _has_family(n, family):
+			break
+		c += 1
+		cur += dir
+	return c
+
+
+func _on_family_counter_changed(family: String, count: int, _owner: Node) -> void:
+	print(family, ": ", count)

@@ -1,7 +1,8 @@
-[gd_scene load_steps=35 format=3 uid="uid://bpfetq2spy761"]
+[gd_scene load_steps=36 format=3 uid="uid://bpfetq2spy761"]
 
 [ext_resource type="Script" uid="uid://bjhr1gy7008q4" path="res://scripts/player.gd" id="1_3vyb7"]
 [ext_resource type="Texture2D" uid="uid://c16p2d11x5n76" path="res://assets/Player.png" id="2_g2els"]
+[ext_resource type="Script" uid="uid://kqh2qsxxjk04" path="res://scripts/familiar.gd" id="3_fam1"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qhqgy"]
 atlas = ExtResource("2_g2els")
@@ -253,18 +254,14 @@ script = ExtResource("1_3vyb7")
 has_shadow = null
 
 [node name="PlayerBody" type="AnimatedSprite2D" parent="."]
-position = Vector2(0, 0)
 scale = Vector2(1.859375, 2)
 sprite_frames = SubResource("SpriteFrames_487ah")
 animation = &"IdleBack"
 autoplay = "IdleFront"
-centered = true
-offset = Vector2(0, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 z_index = 1
 y_sort_enabled = true
-position = Vector2(0, 0)
 scale = Vector2(4, 4)
 shape = SubResource("CapsuleShape2D_g2els")
 
@@ -274,3 +271,7 @@ target_position = Vector2(0.5, 31.75)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(-3, 76)
+
+[node name="Familiar" type="Node" parent="."]
+script = ExtResource("3_fam1")
+families = Array[String](["player"])

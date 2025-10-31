@@ -8,6 +8,10 @@ globs:
 - project.godot
 alwaysApply: true
 ---
+## gdtoolkit expectations
+- Formatting must be `gdformat`-clean (gdtoolkit 4.x). Structure code to minimize reflows (short parameters, early returns, no trailing whitespace).
+- No linter warnings under `gdlint` defaults (no unused/undefined symbols, unreachable code, overly complex or long functions, or naming violations).
+
 # GDScript Style
 - Prefer static typing everywhere; avoid `Variant`.
 - Use meaningful names; avoid cryptic abbreviations.
@@ -76,6 +80,7 @@ alwaysApply: true
 - Keep a tiny test room scene for quick iteration.
 - Log with categories; remove noisy prints before commit.
 - Treat warnings as errors; keep the output clean.
+- After edits, run: `make format` then `make lint`. If `gdformat` rearranges code, adopt its output.
 
 ## Git & Review
 - No binary assets in code review without reason; keep sources committed.

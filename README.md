@@ -65,3 +65,10 @@ Re-run `make hooks` if hooks ever need reinstalling.
 - `pipx: command not found`: re-run the setup script and restart your terminal to refresh PATH.
 - `gdformat`/`gdlint` not found: ensure `pipx ensurepath` took effect (open a new shell) or run the setup script again.
 - Hook didn’t run: run `make hooks` to reinstall pre-commit hooks.
+
+### Cursor rules
+This repo includes always-on Cursor rules to match gdtoolkit and the project’s GDScript style.
+
+- Rules file: `topdown/.cursor/rules/gdscript-best-practices.md`
+- Effect: AI edits are steered to be `gdformat`-clean and pass `gdlint`, with our naming, typing, and Godot scene conventions.
+- If edits fail checks, run `make format` then `make lint` and accept `gdformat`’s layout.

@@ -93,13 +93,16 @@ func _try_step(dir: Vector2i) -> void:
 		var box_to := to + dir
 		if not (("is_cell_free" in world) and world.is_cell_free(box_to)):
 			return
-		_start_move(from, to)
-		if "move_to_cell" in box:
-			box.move_to_cell(box_to, world)
-	else:
-		if not (("is_cell_free" in world) and world.is_cell_free(to)):
+		# If box is currently moving, do not attempt to push again
+		if ("moving" in box) and box.moving:
 			return
-		_start_move(from, to)
+		# Move the box first; only step the player if the box accepted the move
+		if ("move_to_cell" in box) and box.move_to_cell(box_to, world):
+			_start_move(from, to)
+		return
+	if not (("is_cell_free" in world) and world.is_cell_free(to)):
+		return
+	_start_move(from, to)
 
 
 func _start_move(from: Vector2i, to: Vector2i) -> void:

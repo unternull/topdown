@@ -14,9 +14,9 @@ func _ready() -> void:
 	position = grid.snap_to_cell(position)
 
 
-func move_to_cell(cell: Vector2i, world: Node) -> void:
+func move_to_cell(cell: Vector2i, world: Node) -> bool:
 	if moving:
-		return
+		return false
 	moving = true
 	var from: Vector2i = grid.world_to_cell(position)
 	if "move_actor" in world:
@@ -29,3 +29,4 @@ func move_to_cell(cell: Vector2i, world: Node) -> void:
 	tween = create_tween().set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(self, "position", dst, max(0.01, dur))
 	tween.finished.connect(func(): moving = false)
+	return true

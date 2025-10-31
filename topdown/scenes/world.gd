@@ -78,6 +78,6 @@ func get_box_at(c: Vector2i) -> Node:
 
 
 func move_actor(from: Vector2i, to: Vector2i, node: Node) -> void:
-	if occupancy.has(from):
+	if occupancy.get(from) == node:
 		occupancy.erase(from)
 	occupancy[to] = node

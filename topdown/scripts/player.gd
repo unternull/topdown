@@ -93,9 +93,12 @@ func _try_step(dir: Vector2i) -> void:
 		var box_to := to + dir
 		if not (("is_cell_free" in world) and world.is_cell_free(box_to)):
 			return
-		_start_move(from, to)
+		var box_moved := false
 		if "move_to_cell" in box:
-			box.move_to_cell(box_to, world)
+			box_moved = box.move_to_cell(box_to, world)
+		if not box_moved:
+			return
+		_start_move(from, to)
 	else:
 		if not (("is_cell_free" in world) and world.is_cell_free(to)):
 			return

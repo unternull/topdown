@@ -55,6 +55,16 @@ Follow this order in scripts:
 	```
 - Avoid `Variant` for members/returns.
 
+### Avoid Variant pitfalls
+- When using `Dictionary.get(...)`, the result is `Variant` – explicitly annotate or cast:
+	```gdscript
+	var sets_for: Dictionary = dict.get("key", {}) as Dictionary
+	var arr: Array = dict.get("arr", []) as Array
+	var cells: Array[Vector2i] = dict.get("cells", []) as Array[Vector2i]
+	```
+- Don’t infer types from default literals like `[]`/`{}`; declare the variable type on the left.
+- Prefer typed arrays over raw arrays when element types are known (e.g., `Array[Vector2i]`).
+
 ## Signals & docs
 - Name signals in past tense (snake_case).
 - Provide minimal `##` doc comments for classes, important properties, and non-trivial methods explaining “why”.

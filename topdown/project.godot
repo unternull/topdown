@@ -63,3 +63,6 @@ renderer/rendering_method.mobile="gl_compatibility"
 [autoload]
 ShadowManager="*res://scripts/shadow_manager.gd"
 Grid="*res://scripts/grid.gd"
+
+[editor_plugins]
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")

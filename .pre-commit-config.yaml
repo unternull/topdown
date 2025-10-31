@@ -4,6 +4,8 @@ repos:
     hooks:
       - id: gdlint
         name: gdlint
+        exclude: ^topdown/addons/
       - id: gdformat
         name: gdformat (check only)
         args: ["--check"]
+        exclude: ^topdown/addons/

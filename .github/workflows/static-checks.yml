@@ -10,5 +10,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Scony/godot-gdscript-toolkit@master
-      - run: gdformat --check topdown
-      - run: gdlint topdown
+      - run: gdformat --check topdown/scripts topdown/scenes topdown/test
+      - run: gdlint topdown/scripts topdown/scenes topdown/test

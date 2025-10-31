@@ -124,7 +124,11 @@ func _recompute_row(y: int) -> void:
 		if fams.is_empty():
 			continue
 		for fam in fams:
-			var len := _run_length(Vector2i(x, y), Vector2i(-1, 0), fam) + 1 + _run_length(Vector2i(x, y), Vector2i(1, 0), fam)
+			var len := (
+				_run_length(Vector2i(x, y), Vector2i(-1, 0), fam)
+				+ 1
+				+ _run_length(Vector2i(x, y), Vector2i(1, 0), fam)
+			)
 			var f := _get_familiar(n)
 			f.set_family_count(fam, len)
 
@@ -138,9 +142,13 @@ func _recompute_col(x: int) -> void:
 		if fams.is_empty():
 			continue
 		for fam in fams:
-			var len := _run_length(Vector2i(x, y), Vector2i(0, -1), fam) + 1 + _run_length(Vector2i(x, y), Vector2i(0, 1), fam)
+			var len := (
+				_run_length(Vector2i(x, y), Vector2i(0, -1), fam)
+				+ 1
+				+ _run_length(Vector2i(x, y), Vector2i(0, 1), fam)
+			)
 			var f := _get_familiar(n)
-			var current := int(f.familyCounters.get(fam, 1))
+			var current := int(f.family_counters.get(fam, 1))
 			f.set_family_count(fam, max(current, len))
 
 

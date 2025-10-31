@@ -16,13 +16,81 @@ alwaysApply: true
 - Prefer static typing everywhere; avoid `Variant`.
 - Use meaningful names; avoid cryptic abbreviations.
 - Naming:
+  - Files: snake_case (e.g., `player_controller.gd`)
   - Classes/Nodes: PascalCase (e.g., `PlayerController`)
-  - Variables/Functions/Signals: camelCase (e.g., `pushForce`, `startPushing`)
-  - Constants/Enums: SCREAMING_SNAKE_CASE (e.g., `MAX_SPEED`)
+  - Functions: snake_case (e.g., `recalculate_path`)
+  - Variables: snake_case (e.g., `max_speed`, `family_counters`)
+  - Booleans: `is_`/`has_` prefix (e.g., `is_active`, `has_shadow`)
+  - Signals: snake_case, past tense (e.g., `score_changed`, `door_opened`)
+  - Constants: SCREAMING_SNAKE_CASE (e.g., `MAX_SPEED`)
+  - Enums: Name PascalCase; members SCREAMING_SNAKE_CASE; one per line
+  - Private internals: prefix `_` for non-API helpers/fields
 - Avoid reserved words as identifiers (e.g., don’t name a variable `as`, `in`, `or`, `and`).
 - Prefer early returns to reduce nesting; keep functions focused and small.
 - Comment “why”, not “what”; prefer doc comments using `##` above functions/props.
 - Use tab indentation, do not use space indentation
+
+## Code order
+Follow this order in scripts:
+1. `@tool`, `@icon`, `class_name`
+2. `extends`
+3. `##` doc comment
+4. signals
+5. enums
+6. constants
+7. `@export` variables
+8. regular variables
+9. `@onready` variables
+10. lifecycle: `_init()`, `_enter_tree()`, `_ready()`, `_process()`, `_physics_process()`, others
+11. public methods
+12. private methods
+13. inner classes
+
+## Typing
+- Prefer static typing for members and return types.
+- Use `:=` when the type is obvious; write explicit types when ambiguous.
+- Cache nodes with typed `@onready`:
+	```gdscript
+	@onready var sprite: Sprite2D = get_node("Sprite2D")
+	```
+- Avoid `Variant` for members/returns.
+
+## Signals & docs
+- Name signals in past tense (snake_case).
+- Provide minimal `##` doc comments for classes, important properties, and non-trivial methods explaining “why”.
+
+## Canonical snippet
+```gdscript
+class_name PlayerController
+extends CharacterBody2D
+## Controls the player movement and interaction.
+
+signal score_changed(new_score: int)
+
+enum Element {
+	EARTH,
+	WATER,
+	AIR,
+	FIRE,
+}
+
+const MAX_SPEED := 200.0
+
+@export var is_active: bool = true
+var max_speed: float = MAX_SPEED
+@onready var sprite: Sprite2D = get_node("Sprite2D")
+
+func _ready() -> void:
+	score_changed.connect(_on_score_changed)
+
+func move_player(delta: float) -> void:
+	if not is_active:
+		return
+	# ...
+
+func _on_score_changed(new_score: int) -> void:
+	# ...
+```
 
 # Node Access & Structure
 - Cache children with typed `@onready` vars; avoid repeated `$`/`get_node` in hot paths.

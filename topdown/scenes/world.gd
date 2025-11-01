@@ -47,7 +47,9 @@ func _build_occupancy() -> void:
 				occupancy[cell] = child
 				var fam := _get_familiar(child)
 				if fam:
-					fam.family_counter_changed.connect(_on_family_counter_changed.bind(child))
+					var cb := _on_family_counter_changed.bind(child)
+					if not fam.family_counter_changed.is_connected(cb):
+						fam.family_counter_changed.connect(cb)
 
 	_recompute_all_counts()
 	_rebuild_all_family_sets()
@@ -84,6 +86,10 @@ func get_box_at(c: Vector2i) -> Node:
 	if node and node.is_in_group("box"):
 		return node
 	return null
+
+
+func get_actor_at(c: Vector2i) -> Node:
+	return occupancy.get(c) as Node
 
 
 func move_actor(from: Vector2i, to: Vector2i, node: Node) -> void:
@@ -129,13 +135,13 @@ func _recompute_row(y: int) -> void:
 		if fams.is_empty():
 			continue
 		for fam in fams:
-			var len := (
+			var run_len := (
 				_run_length(Vector2i(x, y), Vector2i(-1, 0), fam)
 				+ 1
 				+ _run_length(Vector2i(x, y), Vector2i(1, 0), fam)
 			)
 			var f := _get_familiar(n)
-			f.set_family_count(fam, len)
+			f.set_family_count(fam, run_len)
 
 
 func _recompute_col(x: int) -> void:
@@ -147,14 +153,14 @@ func _recompute_col(x: int) -> void:
 		if fams.is_empty():
 			continue
 		for fam in fams:
-			var len := (
+			var run_len := (
 				_run_length(Vector2i(x, y), Vector2i(0, -1), fam)
 				+ 1
 				+ _run_length(Vector2i(x, y), Vector2i(0, 1), fam)
 			)
 			var f := _get_familiar(n)
 			var current := int(f.family_counters.get(fam, 1))
-			f.set_family_count(fam, max(current, len))
+			f.set_family_count(fam, max(current, run_len))
 
 
 func _run_length(from: Vector2i, dir: Vector2i, family: String) -> int:
@@ -169,12 +175,12 @@ func _run_length(from: Vector2i, dir: Vector2i, family: String) -> int:
 	return c
 
 
-func _on_family_counter_changed(family: String, _count: int, owner: Node) -> void:
+func _on_family_counter_changed(family: String, _count: int, owner_node: Node) -> void:
 	# Locate owner's grid cell
 	var owner_cell := Vector2i(-1, -1)
 	for c in occupancy.keys():
 		var n := occupancy.get(c) as Node
-		if n == owner:
+		if n == owner_node:
 			owner_cell = c
 			break
 	if owner_cell.x < 0:

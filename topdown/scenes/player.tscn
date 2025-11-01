@@ -1,8 +1,9 @@
-[gd_scene load_steps=36 format=3 uid="uid://bpfetq2spy761"]
+[gd_scene load_steps=37 format=3 uid="uid://bpfetq2spy761"]
 
 [ext_resource type="Script" uid="uid://bjhr1gy7008q4" path="res://scripts/player.gd" id="1_3vyb7"]
 [ext_resource type="Texture2D" uid="uid://c16p2d11x5n76" path="res://assets/Player.png" id="2_g2els"]
 [ext_resource type="Script" uid="uid://kqh2qsxxjk04" path="res://scripts/familiar.gd" id="3_fam1"]
+[ext_resource type="Script" path="res://scripts/pushing.gd" id="4_push"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qhqgy"]
 atlas = ExtResource("2_g2els")
@@ -275,3 +276,6 @@ position = Vector2(-3, 76)
 [node name="Familiar" type="Node" parent="."]
 script = ExtResource("3_fam1")
 families = Array[String](["player"])
+
+[node name="Pushing" type="Node" parent="."]
+script = ExtResource("4_push")

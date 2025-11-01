@@ -79,35 +79,25 @@ func _input_dir_to_cardinal() -> Vector2i:
 
 
 func _try_step(dir: Vector2i) -> void:
-	var world := get_tree().current_scene
+	var world := get_parent()
 	var from := target_cell
 	var to := from + dir
 	if not grid.in_bounds(to):
 		return
 
-	# If a box is in front
-	var box: Node = null
-	if "get_box_at" in world:
-		box = world.get_box_at(to)
-	if box:
-		var box_to := to + dir
-		if not (("is_cell_free" in world) and world.is_cell_free(box_to)):
-			return
-		# If box is currently moving, do not attempt to push again
-		if ("moving" in box) and box.moving:
-			return
-		# Move the box first; only step the player if the box accepted the move
-		if ("move_to_cell" in box) and box.move_to_cell(box_to, world):
-			_start_move(from, to)
+	# Delegate pushing logic to Pushing node if present
+	var pushing: Node = get_node_or_null("Pushing")
+	if pushing and ("try_push" in pushing) and pushing.try_push(dir):
+		_start_move(from, to)
 		return
-	if not (("is_cell_free" in world) and world.is_cell_free(to)):
+	if not (world != null and world.has_method("is_cell_free") and world.is_cell_free(to)):
 		return
 	_start_move(from, to)
 
 
 func _start_move(from: Vector2i, to: Vector2i) -> void:
-	var world := get_tree().current_scene
-	if "move_actor" in world:
+	var world := get_parent()
+	if world != null and world.has_method("move_actor"):
 		world.move_actor(from, to, self)
 	target_cell = to
 	moving = true

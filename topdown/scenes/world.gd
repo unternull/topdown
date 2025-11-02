@@ -1,11 +1,16 @@
 extends Node2D
 
 signal family_sets_changed(family: String, row_sets: Array, col_sets: Array)
+signal set_event(
+	family: String, direction: String, guid: String, anchor_cell: Vector2i, new_length: int
+)
 
 @export var grid_size := Vector2i(8, 5)
 
 var occupancy := {}  # Dictionary keyed by Vector2i -> Node
 var family_sets := {}
+var _prev_family_sets := {}
+var _guid_counter := 1
 
 @onready var grid: Node = get_node("/root/Grid")
 
@@ -22,6 +27,9 @@ func _initialize_grid() -> void:
 	_center_player()
 	_build_occupancy()
 	_apply_camera_limits()
+	# Debug hook to verify set_event emissions
+	if not set_event.is_connected(_on_set_event):
+		set_event.connect(_on_set_event)
 
 
 ## Clamp the player camera to the playable area derived from grid
@@ -175,34 +183,9 @@ func _run_length(from: Vector2i, dir: Vector2i, family: String) -> int:
 	return c
 
 
-func _on_family_counter_changed(family: String, _count: int, owner_node: Node) -> void:
-	# Locate owner's grid cell
-	var owner_cell := Vector2i(-1, -1)
-	for c in occupancy.keys():
-		var n := occupancy.get(c) as Node
-		if n == owner_node:
-			owner_cell = c
-			break
-	if owner_cell.x < 0:
-		return
-
-	# Row set: print only if at left edge (no same-family to the left), compute size on the fly
-	var left: Vector2i = owner_cell + Vector2i(-1, 0)
-	var left_node: Node = occupancy.get(left) as Node
-	if left_node == null or not _has_family(left_node, family):
-		var row_len := _run_length(owner_cell, Vector2i(1, 0), family) + 1
-		if row_len > 1:
-			print(family, ": ", row_len)
-			return
-
-	# Column set: print only if at top edge (no same-family above), compute size on the fly
-	var up: Vector2i = owner_cell + Vector2i(0, -1)
-	var up_node: Node = occupancy.get(up) as Node
-	if up_node == null or not _has_family(up_node, family):
-		var col_len := _run_length(owner_cell, Vector2i(0, 1), family) + 1
-		if col_len > 1:
-			print(family, ": ", col_len)
-			return
+func _on_family_counter_changed(_family: String, _count: int, _owner_node: Node) -> void:
+	# Previous print-based edge detection removed in favor of set_event signal.
+	pass
 
 
 func _discover_families() -> Array[String]:
@@ -256,6 +239,8 @@ func _finalize_set(id: int, family: String, axis: String, cells: Array[Vector2i]
 		"nodes": _collect_set_nodes(cells),
 		"size": cells.size(),
 		"aabb": _collect_set_aabb(cells),
+		"anchor": cells[0] if cells.size() > 0 else Vector2i.ZERO,
+		"guid": "",
 	}
 
 
@@ -303,15 +288,22 @@ func _build_col_sets_for(family: String) -> Array:
 
 func _rebuild_all_family_sets() -> void:
 	var families := _discover_families()
+	var new_family_sets := {}
 	for fam in families:
 		var rows := _build_row_sets_for(fam)
 		var cols := _build_col_sets_for(fam)
-		family_sets[fam] = {
+		_assign_set_guids(fam, rows, cols)
+		new_family_sets[fam] = {
 			"row_sets": rows,
 			"col_sets": cols,
 		}
 		family_sets_changed.emit(fam, rows, cols)
-		#print("%s: rows=%d, cols=%d" % [fam, rows.size(), cols.size()])
+
+	var prev_index := _index_family_sets_by_guid(_prev_family_sets)
+	var curr_index := _index_family_sets_by_guid(new_family_sets)
+	_emit_set_diffs(prev_index, curr_index)
+	family_sets = new_family_sets
+	_prev_family_sets = new_family_sets
 
 
 func get_family_sets() -> Dictionary:
@@ -320,3 +312,123 @@ func get_family_sets() -> Dictionary:
 
 func get_family_sets_for(family: String) -> Dictionary:
 	return family_sets.get(family, {})
+
+
+func _index_family_sets_by_guid(fs: Dictionary) -> Dictionary:
+	var idx := {}
+	for fam in fs.keys():
+		var fam_sets := fs.get(fam, {}) as Dictionary
+		var row_sets: Array = fam_sets.get("row_sets", [])
+		var col_sets: Array = fam_sets.get("col_sets", [])
+		for s in row_sets:
+			var size := int((s as Dictionary).get("size", 0))
+			if size <= 1:
+				continue
+			var guid := String((s as Dictionary).get("guid", ""))
+			if guid == "":
+				continue
+			idx[guid] = {
+				"family": String(fam),
+				"direction": "horizontal",
+				"anchor": (s as Dictionary).get("anchor", Vector2i.ZERO),
+				"size": size,
+			}
+		for s in col_sets:
+			var size_c := int((s as Dictionary).get("size", 0))
+			if size_c <= 1:
+				continue
+			var guid_c := String((s as Dictionary).get("guid", ""))
+			if guid_c == "":
+				continue
+			idx[guid_c] = {
+				"family": String(fam),
+				"direction": "vertical",
+				"anchor": (s as Dictionary).get("anchor", Vector2i.ZERO),
+				"size": size_c,
+			}
+	return idx
+
+
+func _emit_set_diffs(prev_idx: Dictionary, curr_idx: Dictionary) -> void:
+	# Appearances and changes
+	for guid in curr_idx.keys():
+		var curr := curr_idx.get(guid, {}) as Dictionary
+		var prev := prev_idx.get(guid, {}) as Dictionary
+		var new_size := int(curr.get("size", 0))
+		var new_anchor: Vector2i = curr.get("anchor", Vector2i.ZERO)
+		var family := String(curr.get("family", ""))
+		var direction := String(curr.get("direction", ""))
+		if prev.is_empty():
+			# New set
+			set_event.emit(family, direction, String(guid), new_anchor, new_size)
+		else:
+			var old_size := int(prev.get("size", 0))
+			var old_anchor: Vector2i = prev.get("anchor", Vector2i.ZERO)
+			if old_size != new_size or old_anchor != new_anchor:
+				set_event.emit(family, direction, String(guid), new_anchor, new_size)
+	# Disappearances
+	for guid in prev_idx.keys():
+		if not curr_idx.has(guid):
+			var p := prev_idx.get(guid, {}) as Dictionary
+			set_event.emit(
+				String(p.get("family", "")),
+				String(p.get("direction", "")),
+				String(guid),
+				p.get("anchor", Vector2i.ZERO),
+				0
+			)
+
+
+func _on_set_event(
+	family: String, direction: String, guid: String, anchor_cell: Vector2i, new_length: int
+) -> void:
+	print("set:", family, direction, '("', guid, '"', anchor_cell, ")len:", new_length)
+
+
+func _new_guid() -> String:
+	var s := "set-%d" % _guid_counter
+	_guid_counter += 1
+	return s
+
+
+func _assign_set_guids(family: String, rows: Array, cols: Array) -> void:
+	var prev_fam := _prev_family_sets.get(family, {}) as Dictionary
+	var prev_rows: Array = prev_fam.get("row_sets", [])
+	var prev_cols: Array = prev_fam.get("col_sets", [])
+	_assign_guids_for_dir("horizontal", prev_rows, rows)
+	_assign_guids_for_dir("vertical", prev_cols, cols)
+
+
+func _assign_guids_for_dir(direction: String, prev_sets: Array, curr_sets: Array) -> void:
+	# Build a copy of prev sets we can mark as used
+	var prev_pool: Array = []
+	for ps in prev_sets:
+		prev_pool.append(ps)
+	# Helper to compute overlap size between two sets
+	var overlap: Callable = func(a: Dictionary, b: Dictionary) -> int:
+		var ac: Array = a.get("cells", [])
+		var bc: Array = b.get("cells", [])
+		var set_b := {}
+		for c in bc:
+			set_b[c] = true
+		var cnt := 0
+		for c in ac:
+			if set_b.has(c):
+				cnt += 1
+		return cnt
+	for cs in curr_sets:
+		var best_idx := -1
+		var best_ov := 0
+		for i in range(prev_pool.size()):
+			var ps := prev_pool[i] as Dictionary
+			if String(ps.get("axis", "")) != ("row" if direction == "horizontal" else "col"):
+				continue
+			var ov: int = overlap.call(ps, cs)
+			if ov > best_ov:
+				best_ov = ov
+				best_idx = i
+		if best_ov > 0 and best_idx >= 0:
+			cs["guid"] = String((prev_pool[best_idx] as Dictionary).get("guid", _new_guid()))
+			prev_pool.remove_at(best_idx)
+		else:
+			cs["guid"] = _new_guid()

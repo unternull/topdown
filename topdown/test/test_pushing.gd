@@ -37,6 +37,13 @@ func test_pushing_pushes_pushable() -> void:
 	world._build_occupancy()
 
 	player._try_step(dir)
+	# Await movements to complete (box first, then player)
+	var box_ga: Node = box.get_node_or_null("GridActor")
+	if box_ga != null:
+		await box_ga.move_finished
+	var player_ga: Node = player.get_node_or_null("GridActor")
+	if player_ga != null:
+		await player_ga.move_finished
 
 	var pushed_to: Vector2i = front + dir
 	var actor_at_pushed: Node = world.get_actor_at(pushed_to)

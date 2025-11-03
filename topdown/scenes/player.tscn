@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://c16p2d11x5n76" path="res://assets/Player.png" id="2_g2els"]
 [ext_resource type="Script" uid="uid://kqh2qsxxjk04" path="res://scripts/familiar.gd" id="3_fam1"]
 [ext_resource type="Script" path="res://scripts/pushing.gd" id="4_push"]
+[ext_resource type="Script" path="res://scripts/grid_actor.gd" id="5_gridact"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qhqgy"]
 atlas = ExtResource("2_g2els")
@@ -254,7 +255,9 @@ motion_mode = 1
 script = ExtResource("1_3vyb7")
 has_shadow = null
 
-[node name="PlayerBody" type="AnimatedSprite2D" parent="."]
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="PlayerBody" type="AnimatedSprite2D" parent="Visual"]
 scale = Vector2(1.859375, 2)
 sprite_frames = SubResource("SpriteFrames_487ah")
 animation = &"IdleBack"
@@ -270,8 +273,10 @@ shape = SubResource("CapsuleShape2D_g2els")
 position = Vector2(-0.5, 80.25)
 target_position = Vector2(0.5, 31.75)
 
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(-3, 76)
+[node name="Camera2D" type="Camera2D" parent="Visual"]
+position = Vector2(0, 0)
+position_smoothing_enabled = true
+position_smoothing_speed = 12.0
 
 [node name="Familiar" type="Node" parent="."]
 script = ExtResource("3_fam1")
@@ -279,3 +284,6 @@ families = Array[String](["player"])
 
 [node name="Pushing" type="Node" parent="."]
 script = ExtResource("4_push")
+
+[node name="GridActor" type="Node" parent="."]
+script = ExtResource("5_gridact")

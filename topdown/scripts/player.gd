@@ -11,7 +11,7 @@ enum PlayerState {
 
 const WALK_SPEED := 480.0
 
-@export var has_shadow := true
+@export var has_shadow := false
 
 var last_direction := Vector2.ZERO
 var stays_back := false
@@ -19,7 +19,8 @@ var stays_back := false
 var moving := false
 var target_cell := Vector2i.ZERO
 var held_dir := Vector2i.ZERO
-var tween: Tween
+@onready var grid_actor: Node = get_node_or_null("GridActor")
+@onready var player_body: AnimatedSprite2D = get_node("Visual/PlayerBody") as AnimatedSprite2D
 
 @onready var grid: Node = get_node("/root/Grid")
 
@@ -29,6 +30,12 @@ func _ready() -> void:
 	add_to_group("player")
 	position = grid.snap_to_cell(position)
 	target_cell = grid.world_to_cell(position)
+	# Hook into GridActor lifecycle to reflect actual move state/direction
+	if grid_actor != null:
+		if grid_actor.has_signal("move_started"):
+			(grid_actor as Object).connect("move_started", _on_grid_move_started)
+		if grid_actor.has_signal("move_finished"):
+			(grid_actor as Object).connect("move_finished", _on_grid_move_finished)
 
 
 func _physics_process(_delta: float) -> void:
@@ -41,32 +48,48 @@ func _physics_process(_delta: float) -> void:
 	if not moving and held_dir != Vector2i.ZERO:
 		_try_step(held_dir)
 
-	last_direction = Vector2(held_dir.x, held_dir.y)
+	# Update facing from input only when not moving; during a tween we preserve move direction
+	if not moving:
+		last_direction = Vector2(held_dir.x, held_dir.y)
 
 
 func _process(_delta: float) -> void:
+	var is_actually_moving := moving
+	if not is_actually_moving and grid_actor != null:
+		var mv = (grid_actor as Object).get("moving")
+		if typeof(mv) == TYPE_BOOL and mv:
+			is_actually_moving = true
 	var player_state = direction_to_player_state(last_direction)
-	match player_state:
-		PlayerState.WALKING_UP:
-			if $PlayerBody.animation != "WalkingUp":
-				$PlayerBody.animation = "WalkingUp"
-		PlayerState.WALKING_DOWN:
-			if $PlayerBody.animation != "WalkingDown":
-				$PlayerBody.animation = "WalkingDown"
-		PlayerState.WALKING_LEFT:
-			if $PlayerBody.animation != "WalkingSide":
-				$PlayerBody.animation = "WalkingSide"
-				$PlayerBody.flip_h = true
-		PlayerState.WALKING_RIGHT:
-			if $PlayerBody.animation != "WalkingSide":
-				$PlayerBody.animation = "WalkingSide"
-				$PlayerBody.flip_h = false
-		PlayerState.IDLE_FRONT:
-			if $PlayerBody.animation != "IdleFront":
-				$PlayerBody.animation = "IdleFront"
-		PlayerState.IDLE_BACK:
-			if $PlayerBody.animation != "IdleBack":
-				$PlayerBody.animation = "IdleBack"
+	if is_actually_moving:
+		match player_state:
+			PlayerState.WALKING_UP:
+				if player_body.animation != "WalkingUp":
+					player_body.animation = "WalkingUp"
+			PlayerState.WALKING_DOWN:
+				if player_body.animation != "WalkingDown":
+					player_body.animation = "WalkingDown"
+			PlayerState.WALKING_LEFT:
+				if player_body.animation != "WalkingSide":
+					player_body.animation = "WalkingSide"
+					player_body.flip_h = true
+			PlayerState.WALKING_RIGHT:
+				if player_body.animation != "WalkingSide":
+					player_body.animation = "WalkingSide"
+					player_body.flip_h = false
+	else:
+		if stays_back:
+			if player_body.animation != "IdleBack":
+				player_body.animation = "IdleBack"
+		else:
+			if player_body.animation != "IdleFront":
+				player_body.animation = "IdleFront"
+
+
+func _on_grid_move_started(from: Vector2i, to: Vector2i) -> void:
+	moving = true
+	var d := to - from
+	if d != Vector2i.ZERO:
+		last_direction = Vector2(sign(d.x), sign(d.y))
 
 
 func _input_dir_to_cardinal() -> Vector2i:
@@ -87,32 +110,21 @@ func _try_step(dir: Vector2i) -> void:
 
 	# Delegate pushing logic to Pushing node if present
 	var pushing: Node = get_node_or_null("Pushing")
-	if pushing and ("try_push" in pushing) and pushing.try_push(dir):
-		_start_move(from, to)
+	if pushing and pushing.has_method("try_push") and pushing.try_push(dir):
+		# When pushing succeeds, wait for the path to clear; we'll try again on next tick.
 		return
 	if not (world != null and world.has_method("is_cell_free") and world.is_cell_free(to)):
 		return
-	_start_move(from, to)
+	# Grid-authoritative move via GridActor: reserve, tween visuals, update occupancy on finish
+	if grid_actor != null and grid_actor.has_method("move_to"):
+		var started: bool = grid_actor.move_to(to, world)
+		if started:
+			moving = true
 
 
-func _start_move(from: Vector2i, to: Vector2i) -> void:
-	var world := get_parent()
-	if world != null and world.has_method("move_actor"):
-		world.move_actor(from, to, self)
-	target_cell = to
-	moving = true
-	var dst: Vector2 = grid.cell_to_world_center(to)
-	if tween and tween.is_valid():
-		tween.kill()
-	var dist := position.distance_to(dst)
-	var dur := dist / WALK_SPEED
-	tween = create_tween().set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(self, "position", dst, max(0.01, dur))
-	tween.finished.connect(_on_step_finished)
-
-
-func _on_step_finished() -> void:
+func _on_grid_move_finished(to: Vector2i) -> void:
 	moving = false
+	target_cell = to
 	if held_dir != Vector2i.ZERO:
 		_try_step(held_dir)
 

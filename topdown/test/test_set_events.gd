@@ -45,7 +45,13 @@ func _move_player_to(player: Node, to: Vector2i, max_steps: int = 100) -> void:
 		if dir == Vector2i.ZERO:
 			break
 		player._try_step(dir)
+		# Allow the move to start, then await completion if using GridActor.
 		await get_tree().process_frame
+		var player_ga: Node = player.get_node_or_null("GridActor")
+		if player_ga != null:
+			var mv = player_ga.get("moving")
+			if typeof(mv) == TYPE_BOOL and mv:
+				await player_ga.move_finished
 		steps += 1
 	# Safety assertion to avoid silent infinite loops
 	assert_true(player.target_cell == to or steps >= max_steps)

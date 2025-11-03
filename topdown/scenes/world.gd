@@ -11,6 +11,8 @@ var occupancy := {}  # Dictionary keyed by Vector2i -> Node
 var family_sets := {}
 var _prev_family_sets := {}
 var _guid_counter := 1
+var _reservations_by_cell := {}
+var _reservations_by_actor := {}
 
 @onready var grid: Node = get_node("/root/Grid")
 
@@ -34,7 +36,7 @@ func _initialize_grid() -> void:
 
 ## Clamp the player camera to the playable area derived from grid
 func _apply_camera_limits() -> void:
-	var cam: Camera2D = get_node_or_null("Player/Camera2D")
+	var cam: Camera2D = find_child("Camera2D", true, false) as Camera2D
 	if cam == null:
 		return
 	var w: int = grid.grid_size.x * grid.CELL_SIZE
@@ -86,7 +88,7 @@ func _clamp_cell(c: Vector2i) -> Vector2i:
 
 
 func is_cell_free(c: Vector2i) -> bool:
-	return grid.in_bounds(c) and not occupancy.has(c)
+	return grid.in_bounds(c) and not occupancy.has(c) and not _reservations_by_cell.has(c)
 
 
 func get_box_at(c: Vector2i) -> Node:
@@ -104,11 +106,43 @@ func move_actor(from: Vector2i, to: Vector2i, node: Node) -> void:
 	if occupancy.has(from):
 		occupancy.erase(from)
 	occupancy[to] = node
+	# Clear any reservation that points to this actor/to cell (safety net).
+	if _reservations_by_actor.has(node):
+		var cell: Vector2i = _reservations_by_actor.get(node)
+		_reservations_by_actor.erase(node)
+		if _reservations_by_cell.get(cell) == node:
+			_reservations_by_cell.erase(cell)
 	_recompute_row(from.y)
 	_recompute_row(to.y)
 	_recompute_col(from.x)
 	_recompute_col(to.x)
 	_rebuild_all_family_sets()
+
+
+func reserve_cell(actor: Node, cell: Vector2i) -> bool:
+	if not grid.in_bounds(cell):
+		return false
+	# Cannot reserve if occupied or already reserved.
+	if occupancy.has(cell):
+		return false
+	if _reservations_by_cell.has(cell):
+		return false
+	# Update existing reservation if actor had one.
+	if _reservations_by_actor.has(actor):
+		var prev: Vector2i = _reservations_by_actor.get(actor)
+		_reservations_by_cell.erase(prev)
+	_reservations_by_cell[cell] = actor
+	_reservations_by_actor[actor] = cell
+	return true
+
+
+func release_reservation(actor: Node) -> void:
+	if not _reservations_by_actor.has(actor):
+		return
+	var cell: Vector2i = _reservations_by_actor.get(actor)
+	_reservations_by_actor.erase(actor)
+	if _reservations_by_cell.get(cell) == actor:
+		_reservations_by_cell.erase(cell)
 
 
 func _get_familiar(n: Node) -> Node:

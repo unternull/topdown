@@ -9,18 +9,32 @@ var tween: Tween
 
 @onready var grid: Node = get_node("/root/Grid")
 @onready var actor: Node2D = get_parent() as Node2D
+@onready var grid_actor: Node = get_parent().get_node_or_null("GridActor")
 
 
 func push(dir: Vector2i, world: Node) -> bool:
+	# Delegate to GridActor if available; otherwise fall back to legacy tween.
 	if moving:
 		return false
 	var from: Vector2i = grid.world_to_cell(actor.position)
 	var to: Vector2i = from + dir
 	if not grid.in_bounds(to):
 		return false
+	if grid_actor != null and grid_actor.has_method("move_to"):
+		# GridActor handles reservation + tween + occupancy on finish.
+		var started: bool = grid_actor.move_to(to, world)
+		if started:
+			moving = true
+			# Mirror moving flag back to false when the grid move completes (deferred, one-shot).
+			(grid_actor as Object).connect(
+				"move_finished",
+				func(_to: Vector2i) -> void: moving = false,
+				Object.CONNECT_DEFERRED | Object.CONNECT_ONE_SHOT
+			)
+		return started
+	# Legacy fallback (should not be used with reservations) - keep for safety.
 	if not (world != null and world.has_method("is_cell_free") and world.is_cell_free(to)):
 		return false
-
 	moving = true
 	if world != null and world.has_method("move_actor"):
 		world.move_actor(from, to, actor)

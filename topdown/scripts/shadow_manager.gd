@@ -20,7 +20,7 @@ func _on_node_added(n: Node) -> void:
 
 func _try_attach_shadow(n: Node) -> void:
 	var wants := false
-	var v = n.get("hasShadow")
+	var v = n.get("has_shadow")
 	wants = v == true
 	if not wants:
 		return

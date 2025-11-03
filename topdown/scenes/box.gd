@@ -1,6 +1,6 @@
-extends StaticBody2D
+extends Node2D
 
-@export var has_shadow := true
+@export var has_shadow := false
 @export var texture: Texture2D = preload("res://assets/simple_block.png")
 
 @onready var grid: Node = get_node("/root/Grid")

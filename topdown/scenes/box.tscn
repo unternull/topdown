@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dawfg75rptdmc" path="res://scenes/box.gd" id="1_ks2v0"]
 [ext_resource type="Script" uid="uid://kqh2qsxxjk04" path="res://scripts/familiar.gd" id="3_fam1"]
 [ext_resource type="Script" uid="uid://bdat1v0ol0nyd" path="res://scripts/pushable.gd" id="4_pushable"]
+[ext_resource type="Script" path="res://scripts/grid_actor.gd" id="5_gridact"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_ks2v0"]
 rough = true
@@ -10,7 +11,7 @@ rough = true
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_3inec"]
 size = Vector2(144, 144)
 
-[node name="Box" type="StaticBody2D"]
+[node name="Box" type="Node2D"]
 physics_material_override = SubResource("PhysicsMaterial_ks2v0")
 script = ExtResource("1_ks2v0")
 
@@ -26,3 +27,6 @@ families = Array[String](["brown"])
 
 [node name="Pushable" type="Node" parent="."]
 script = ExtResource("4_pushable")
+
+[node name="GridActor" type="Node" parent="."]
+script = ExtResource("5_gridact")

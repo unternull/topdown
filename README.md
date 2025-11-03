@@ -36,7 +36,7 @@ make format-check   # Verify formatting (no changes)
 make parse          # Run gdparse on sources (parser output)
 make cc             # Cyclomatic complexity (gdradon)
 make hooks          # Re-install pre-commit hooks
-make test           # Run unit tests via GUT in headless Godot
+make test           # Run unit tests via GUT in headless Godot (or GODOT=/Applications/Godot.app/Contents/MacOS/Godot make test)
 ```
 
 On Windows without `make`, you can directly call the tools, e.g.:

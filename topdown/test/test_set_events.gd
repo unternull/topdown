@@ -4,6 +4,20 @@ const WORLD_SCENE := preload("res://scenes/world.tscn")
 const BOX_SCENE := preload("res://scenes/box.tscn")
 
 
+func _await_move_or_timeout(ga: Node, timeout_s: float = 5.0) -> void:
+	if ga == null:
+		return
+	var deadline: int = Time.get_ticks_msec() + int(timeout_s * 1000.0)
+	while true:
+		var mv = ga.get("moving")
+		if typeof(mv) == TYPE_BOOL and not mv:
+			return
+		if Time.get_ticks_msec() >= deadline:
+			assert_true(false, "Movement did not finish before timeout")
+			return
+		await get_tree().process_frame
+
+
 func _add_box(world: Node, cell: Vector2i, families: Array[String] = ["brown"]) -> Node:
 	var box := BOX_SCENE.instantiate()
 	var fam: Node = box.get_node("Familiar")
@@ -51,7 +65,7 @@ func _move_player_to(player: Node, to: Vector2i, max_steps: int = 100) -> void:
 		if player_ga != null:
 			var mv = player_ga.get("moving")
 			if typeof(mv) == TYPE_BOOL and mv:
-				await player_ga.move_finished
+				await _await_move_or_timeout(player_ga)
 		steps += 1
 	# Safety assertion to avoid silent infinite loops
 	assert_true(player.target_cell == to or steps >= max_steps)

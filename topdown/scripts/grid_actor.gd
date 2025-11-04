@@ -35,6 +35,7 @@ func move_to(to_cell: Vector2i, world: Node) -> bool:
 		return false
 	# Attempt to reserve the destination cell before starting animation.
 	if not world.reserve_cell(actor, to_cell):
+		print("[GridActor] ", actor.name, " reserve failed:", to_cell)
 		return false
 
 	moving = true
@@ -58,6 +59,7 @@ func move_to(to_cell: Vector2i, world: Node) -> bool:
 		tween_delta = actor.to_local(to_pos) - actor.to_local(from_pos)
 	_tween = actor.create_tween().set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
 	_tween.tween_property(tween_target, "position", tween_delta, dur)
+	print("[GridActor] ", actor.name, " tween start to:", to_cell, " dur:", dur)
 	_tween.finished.connect(
 		func() -> void:
 			# Finalize logical move: update occupancy and snap to the new cell.
@@ -72,6 +74,7 @@ func move_to(to_cell: Vector2i, world: Node) -> bool:
 			if world.has_method("release_reservation"):
 				world.release_reservation(actor)
 			move_finished.emit(grid_cell)
+			print("[GridActor] ", actor.name, " finished at:", grid_cell)
 	)
 
 	return true

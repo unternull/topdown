@@ -3,6 +3,7 @@ extends Node
 ## Enables its parent actor to be pushed by a pusher.
 
 @export var push_speed: float = 480.0
+@export var required_pushing_power: int = 1
 
 var moving: bool = false
 var tween: Tween
@@ -23,6 +24,7 @@ func push(dir: Vector2i, world: Node) -> bool:
 	if grid_actor != null and grid_actor.has_method("move_to"):
 		# GridActor handles reservation + tween + occupancy on finish.
 		var started: bool = grid_actor.move_to(to, world)
+		print("[Pushable] ", actor.name, " push to:", to, " started:", started)
 		if started:
 			moving = true
 			# Mirror moving flag back to false when the grid move completes (deferred, one-shot).

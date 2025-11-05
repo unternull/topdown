@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://gdfsj0f8nkql"]
+[gd_scene load_steps=8 format=3 uid="uid://gdfsj0f8nkql"]
 
 [ext_resource type="PackedScene" uid="uid://dhkhtajmiau22" path="res://scenes/box.tscn" id="1_nnsk1"]
 [ext_resource type="PackedScene" uid="uid://bpfetq2spy761" path="res://scenes/player.tscn" id="2_rwgxs"]
 [ext_resource type="Script" uid="uid://dk7nudt4xddtx" path="res://scenes/world.gd" id="3_q0wld"]
 [ext_resource type="Script" uid="uid://0xl1v1j7jwym" path="res://scenes/grid_overlay.gd" id="4_8ad3y"]
 [ext_resource type="Texture2D" uid="uid://cby8pk2ri5nqu" path="res://assets/moving_block.png" id="4_71j4m"]
+[ext_resource type="Script" path="res://scripts/level_validator.gd" id="5_lvlval"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_e5uuo"]
 size = Vector2(1440, 1440)
@@ -41,3 +42,6 @@ position = Vector2(998, 1069)
 visible = false
 z_index = 1000
 script = ExtResource("4_8ad3y")
+
+[node name="LevelValidator" type="Node" parent="."]
+script = ExtResource("5_lvlval")

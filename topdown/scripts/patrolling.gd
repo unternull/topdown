@@ -103,14 +103,7 @@ func _attempt_step() -> void:
 	var mv = (grid_actor as Object).get("moving")
 	if typeof(mv) == TYPE_BOOL and mv:
 		return
-	# Keep route info fresh
-	if not _on_route:
-		_relocate_to_route()
-	# Yield to player responsiveness
-	if _is_player_moving():
-		_schedule_retry()
-		return
-	# Must be on a valid route segment
+	# Must be on a valid route segment; do not auto-relocate when off-route
 	if not _on_route:
 		_schedule_retry()
 		return
@@ -126,30 +119,46 @@ func _attempt_step() -> void:
 		return
 
 	var dir: Vector2i = Vector2i(sign(next_cell.x - cur_cell.x), sign(next_cell.y - cur_cell.y))
-	# If blocked and we can push, try
-	var occupied: bool = false
+	# Use ActionScheduler for arbitration
+	var target: Node = null
 	if world.has_method("get_actor_at"):
-		occupied = world.get_actor_at(next_cell) != null
-	if occupied and pushing != null and pushing.has_method("try_push") and pushing.try_push(dir):
+		target = world.get_actor_at(next_cell)
+	if target != null and target.get_node_or_null("Pushable") != null:
+		ActionScheduler.enqueue_push(actor, dir, target)
 		return
-
-	# Try reserve-and-move via GridActor
-	if grid_actor.has_method("move_to"):
-		var started: bool = grid_actor.move_to(next_cell, world)
-		if not started:
-			_schedule_retry()
+	ActionScheduler.enqueue_move(actor, next_cell)
 
 
 func _on_move_finished(_to: Vector2i) -> void:
-	# Update route state and continue
+	# Update route membership from current cell; do not auto-relocate if off-route
+	var cur_cell: Vector2i = grid.world_to_cell(actor.position)
+	var seg_found := -1
+	for i in range(_cells.size() - 1):
+		var a: Vector2i = _cells[i]
+		var b: Vector2i = _cells[i + 1]
+		if a.x == b.x:
+			if (
+				cur_cell.x == a.x
+				and ((cur_cell.y >= min(a.y, b.y)) and (cur_cell.y <= max(a.y, b.y)))
+			):
+				seg_found = i
+				break
+		elif a.y == b.y:
+			if (
+				cur_cell.y == a.y
+				and ((cur_cell.x >= min(a.x, b.x)) and (cur_cell.x <= max(a.x, b.x)))
+			):
+				seg_found = i
+				break
+	_on_route = seg_found >= 0
 	if not _on_route:
-		_relocate_to_route()
-	else:
-		var cur_cell: Vector2i = grid.world_to_cell(actor.position)
-		var a: Vector2i = _cells[_segment_index]
-		var b: Vector2i = _cells[_segment_index + 1]
-		if cur_cell == b:
-			_advance_segment_bounds()
+		return
+	_segment_index = seg_found
+	# If we arrived at the segment end, advance segment bounds
+	var a2: Vector2i = _cells[_segment_index]
+	var b2: Vector2i = _cells[_segment_index + 1]
+	if cur_cell == b2:
+		_advance_segment_bounds()
 	_attempt_step_deferred()
 
 
@@ -175,16 +184,17 @@ func _next_cell_towards_segment_end(cur: Vector2i) -> Vector2i:
 	var b: Vector2i = _cells[_segment_index + 1]
 	if a == b:
 		return cur
+	var target: Vector2i = b if _dir_forward else a
 	if a.x == b.x:
-		var step_y := 1 if b.y > a.y else -1
-		if cur == b:
+		if cur == target:
 			return cur
-		return Vector2i(a.x, cur.y + step_y * sign(b.y - cur.y))
+		var step_y := sign(target.y - cur.y) as int
+		return Vector2i(a.x, cur.y + step_y)
 	# horizontal
-	var step_x := 1 if b.x > a.x else -1
-	if cur == b:
+	if cur == target:
 		return cur
-	return Vector2i(cur.x + step_x * sign(b.x - cur.x), a.y)
+	var step_x := sign(target.x - cur.x) as int
+	return Vector2i(cur.x + step_x, a.y)
 
 
 func _is_player_moving() -> bool:

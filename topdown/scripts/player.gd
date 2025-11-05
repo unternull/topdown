@@ -141,18 +141,14 @@ func _try_step(dir: Vector2i) -> void:
 	if not grid.in_bounds(to):
 		return
 
-	# Delegate pushing logic to Pushing node if present
-	var pushing: Node = get_node_or_null("Pushing")
-	if pushing and pushing.has_method("try_push") and pushing.try_push(dir):
-		# When pushing succeeds, wait for the path to clear; we'll try again on next tick.
-		return
-	if not (world != null and world.has_method("is_cell_free") and world.is_cell_free(to)):
-		return
-	# Grid-authoritative move via GridActor: reserve, tween visuals, update occupancy on finish
-	if grid_actor != null and grid_actor.has_method("move_to"):
-		var started: bool = grid_actor.move_to(to, world)
-		if started:
-			moving = true
+	# Use the global scheduler to arbitrate actions deterministically
+	if world != null and world.has_method("get_actor_at"):
+		var target: Node = world.get_actor_at(to)
+		if target != null and (target.get_node_or_null("Pushable") != null):
+			ActionScheduler.enqueue_push(self, dir, target)
+			return
+	# No push target; enqueue a move if destination is within bounds
+	ActionScheduler.enqueue_move(self, to)
 
 
 func _on_grid_move_finished(to: Vector2i) -> void:

@@ -1,11 +1,13 @@
-[gd_scene load_steps=8 format=3 uid="uid://gdfsj0f8nkql"]
+[gd_scene load_steps=10 format=3 uid="uid://gdfsj0f8nkql"]
 
 [ext_resource type="PackedScene" uid="uid://dhkhtajmiau22" path="res://scenes/box.tscn" id="1_nnsk1"]
 [ext_resource type="PackedScene" uid="uid://bpfetq2spy761" path="res://scenes/player.tscn" id="2_rwgxs"]
 [ext_resource type="Script" uid="uid://dk7nudt4xddtx" path="res://scenes/world.gd" id="3_q0wld"]
 [ext_resource type="Script" uid="uid://0xl1v1j7jwym" path="res://scenes/grid_overlay.gd" id="4_8ad3y"]
 [ext_resource type="Texture2D" uid="uid://cby8pk2ri5nqu" path="res://assets/moving_block.png" id="4_71j4m"]
-[ext_resource type="Script" path="res://scripts/level_validator.gd" id="5_lvlval"]
+[ext_resource type="Script" uid="uid://deijrw5xufw7l" path="res://scripts/patrolling_point.gd" id="5_4mrxx"]
+[ext_resource type="Script" uid="uid://bo6r07xv35nu3" path="res://scripts/level_validator.gd" id="5_lvlval"]
+[ext_resource type="Script" uid="uid://dk3hy13xt6t1r" path="res://scripts/patrolling.gd" id="6_7r4gi"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_e5uuo"]
 size = Vector2(1440, 1440)
@@ -32,8 +34,23 @@ position = Vector2(771, 1238)
 position = Vector2(456, 1440)
 
 [node name="MovingBox" parent="." instance=ExtResource("1_nnsk1")]
-position = Vector2(206, 930)
+position = Vector2(508, 930)
 texture = ExtResource("4_71j4m")
+
+[node name="PatrollingPointStart" type="Node2D" parent="MovingBox"]
+position = Vector2(-410, 0)
+script = ExtResource("5_4mrxx")
+metadata/_custom_type_script = "uid://deijrw5xufw7l"
+
+[node name="Patrolling" type="Node" parent="MovingBox"]
+script = ExtResource("6_7r4gi")
+points = Array[NodePath]([NodePath("../PatrollingPointStart"), NodePath("../PatrollingPointFinish")])
+metadata/_custom_type_script = "uid://dk3hy13xt6t1r"
+
+[node name="PatrollingPointFinish" type="Node2D" parent="MovingBox"]
+position = Vector2(728, 0)
+script = ExtResource("5_4mrxx")
+metadata/_custom_type_script = "uid://deijrw5xufw7l"
 
 [node name="Box3" parent="." instance=ExtResource("1_nnsk1")]
 position = Vector2(998, 1069)

@@ -19,6 +19,7 @@ var stays_back := false
 var moving := false
 var target_cell := Vector2i.ZERO
 var held_dir := Vector2i.ZERO
+var pushing_animation_active := false
 @onready var grid_actor: Node = get_node_or_null("GridActor")
 @onready var player_body: AnimatedSprite2D = get_node("Visual/PlayerBody") as AnimatedSprite2D
 
@@ -36,6 +37,13 @@ func _ready() -> void:
 			(grid_actor as Object).connect("move_started", _on_grid_move_started)
 		if grid_actor.has_signal("move_finished"):
 			(grid_actor as Object).connect("move_finished", _on_grid_move_finished)
+	# Listen to pushing state to drive animation while pushing a box
+	var p: Node = get_node_or_null("Pushing")
+	if p != null:
+		if p.has_signal("push_started"):
+			p.connect("push_started", _on_push_started)
+		if p.has_signal("push_animation_release"):
+			p.connect("push_animation_release", _on_push_release)
 
 
 func _physics_process(_delta: float) -> void:
@@ -44,6 +52,18 @@ func _physics_process(_delta: float) -> void:
 		stays_back = true
 	if held_dir == Vector2i(0, 1):
 		stays_back = false
+
+	# Allow reversing mid-move for responsiveness
+	if grid_actor != null:
+		var mv = (grid_actor as Object).get("moving")
+		if typeof(mv) == TYPE_BOOL and mv and held_dir != Vector2i.ZERO:
+			# If opposite direction is held, reverse back to origin immediately
+			var cur_dir := Vector2i(sign(last_direction.x), sign(last_direction.y))
+			if held_dir == -cur_dir:
+				var world := get_parent()
+				if world != null and (grid_actor as Object).has_method("reverse_to_origin"):
+					(grid_actor as Object).call("reverse_to_origin", world)
+				last_direction = Vector2(held_dir.x, held_dir.y)
 
 	if not moving and held_dir != Vector2i.ZERO:
 		_try_step(held_dir)
@@ -54,7 +74,7 @@ func _physics_process(_delta: float) -> void:
 
 
 func _process(_delta: float) -> void:
-	var is_actually_moving := moving
+	var is_actually_moving := moving or pushing_animation_active
 	if not is_actually_moving and grid_actor != null:
 		var mv = (grid_actor as Object).get("moving")
 		if typeof(mv) == TYPE_BOOL and mv:
@@ -71,11 +91,13 @@ func _process(_delta: float) -> void:
 			PlayerState.WALKING_LEFT:
 				if player_body.animation != "WalkingSide":
 					player_body.animation = "WalkingSide"
-					player_body.flip_h = true
+				# Always update flip to ensure correct facing even when animation name doesn't change
+				player_body.flip_h = true
 			PlayerState.WALKING_RIGHT:
 				if player_body.animation != "WalkingSide":
 					player_body.animation = "WalkingSide"
-					player_body.flip_h = false
+				# Always update flip to ensure correct facing even when animation name doesn't change
+				player_body.flip_h = false
 	else:
 		if stays_back:
 			if player_body.animation != "IdleBack":
@@ -86,10 +108,21 @@ func _process(_delta: float) -> void:
 
 
 func _on_grid_move_started(from: Vector2i, to: Vector2i) -> void:
+	pushing_animation_active = false
 	moving = true
 	var d := to - from
 	if d != Vector2i.ZERO:
 		last_direction = Vector2(sign(d.x), sign(d.y))
+
+
+func _on_push_started(dir: Vector2i) -> void:
+	pushing_animation_active = true
+	if dir != Vector2i.ZERO:
+		last_direction = Vector2(sign(dir.x), sign(dir.y))
+
+
+func _on_push_release() -> void:
+	pushing_animation_active = false
 
 
 func _input_dir_to_cardinal() -> Vector2i:

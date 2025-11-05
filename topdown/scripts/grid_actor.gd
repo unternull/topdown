@@ -11,6 +11,7 @@ var grid_cell: Vector2i = Vector2i.ZERO
 var moving: bool = false
 var _tween: Tween
 var _visual: CanvasItem = null
+var _reversing: bool = false
 
 @onready var grid: Node = get_node("/root/Grid")
 @onready var actor: Node2D = get_parent() as Node2D
@@ -39,6 +40,7 @@ func move_to(to_cell: Vector2i, world: Node) -> bool:
 		return false
 
 	moving = true
+	_reversing = false
 	# Sync current cell from actual position in case Grid.origin changed.
 	var from_cell: Vector2i = grid.world_to_cell(actor.position)
 	grid_cell = from_cell
@@ -71,6 +73,7 @@ func move_to(to_cell: Vector2i, world: Node) -> bool:
 			if _visual != null:
 				_visual.position = Vector2.ZERO
 			moving = false
+			_reversing = false
 			if world.has_method("release_reservation"):
 				world.release_reservation(actor)
 			move_finished.emit(grid_cell)
@@ -92,3 +95,45 @@ func _find_visual() -> CanvasItem:
 		if n2 is Sprite2D:
 			return n2 as Sprite2D
 	return null
+
+
+func reverse_to_origin(world: Node) -> bool:
+	# Cancel an in-flight tween and return to the starting cell visually.
+	if not moving or _reversing:
+		return false
+	_reversing = true
+	# Release the reserved destination cell since we won't complete the move.
+	if world != null and world.has_method("release_reservation"):
+		world.release_reservation(actor)
+	# Determine tween target and desired target position back at origin.
+	var tween_target: Object = _visual if _visual != null else actor
+	var origin_pos_world: Vector2 = grid.cell_to_world_center(grid_cell)
+	var current_pos: Vector2 = Vector2.ZERO
+	var target_pos: Vector2 = Vector2.ZERO
+	if tween_target == actor:
+		current_pos = actor.position
+		target_pos = origin_pos_world
+	else:
+		# Using visual offset; zero is origin
+		current_pos = (_visual as CanvasItem).position
+		target_pos = Vector2.ZERO
+	# Compute duration based on remaining distance and move_speed
+	var dist: float = current_pos.distance_to(target_pos)
+	var dur: float = max(0.01, dist / move_speed)
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	_tween = actor.create_tween().set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
+	_tween.tween_property(tween_target, "position", target_pos, dur)
+	print("[GridActor] ", actor.name, " reversing to:", grid_cell, " dur:", dur)
+	_tween.finished.connect(
+		func() -> void:
+			# Snap back to the starting cell and end movement without changing occupancy.
+			actor.position = origin_pos_world
+			if _visual != null:
+				_visual.position = Vector2.ZERO
+			moving = false
+			_reversing = false
+			# Notify listeners that movement concluded at the original cell.
+			move_finished.emit(grid_cell)
+	)
+	return true

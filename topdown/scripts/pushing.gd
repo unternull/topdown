@@ -2,7 +2,12 @@ class_name Pushing
 extends Node
 ## Enables its parent actor to push adjacent actors that have a Pushable child.
 
+signal push_started(dir: Vector2i)
+signal push_animation_release
+
 @export var pushing_power: int = 1
+
+var pushing_in_progress: bool = false
 
 @onready var grid: Node = get_node("/root/Grid")
 @onready var actor: Node2D = get_parent() as Node2D
@@ -48,6 +53,9 @@ func try_push(dir: Vector2i) -> bool:
 	print("[Pushing] ", actor.name, " target started:", pushed)
 	if not pushed:
 		return false
+	# Begin temporary pushing animation state for the pusher.
+	pushing_in_progress = true
+	push_started.emit(dir)
 	# Chain the player's step into the vacated cell once the target finishes moving.
 	var target_ga: Node = target.get_node_or_null("GridActor")
 	if target_ga != null:
@@ -67,4 +75,15 @@ func _on_target_pushed(_pushed_to: Vector2i, vacated_cell: Vector2i) -> void:
 	var world: Node = actor.get_parent()
 	if world == null:
 		return
+	# Clear the pushing animation state exactly when the player's move actually starts.
+	if player_ga.has_signal("move_started"):
+		player_ga.move_started.connect(
+			Callable(self, "_on_player_move_started"),
+			Object.CONNECT_DEFERRED | Object.CONNECT_ONE_SHOT
+		)
 	player_ga.call_deferred("move_to", vacated_cell, world)
+
+
+func _on_player_move_started(_from: Vector2i, _to: Vector2i) -> void:
+	pushing_in_progress = false
+	push_animation_release.emit()

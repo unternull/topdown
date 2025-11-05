@@ -137,3 +137,20 @@ func reverse_to_origin(world: Node) -> bool:
 			move_finished.emit(grid_cell)
 	)
 	return true
+
+
+func cancel_to_origin_immediate(world: Node) -> void:
+	# Immediately stop the in-flight tween and snap back to the starting cell.
+	if not moving:
+		return
+	# Release any reserved destination cell since we won't complete the move.
+	if world != null and world.has_method("release_reservation"):
+		world.release_reservation(actor)
+	if _tween and _tween.is_valid():
+		_tween.kill()
+	var origin_pos_world: Vector2 = grid.cell_to_world_center(grid_cell)
+	actor.position = origin_pos_world
+	if _visual != null:
+		_visual.position = Vector2.ZERO
+	moving = false
+	_reversing = false

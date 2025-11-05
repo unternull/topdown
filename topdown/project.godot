@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 ShadowManager="*res://scripts/shadow_manager.gd"
 Grid="*res://scripts/grid.gd"
+ActionScheduler="*res://scripts/action_scheduler.gd"
 
 [display]
 

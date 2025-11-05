@@ -56,34 +56,6 @@ func try_push(dir: Vector2i) -> bool:
 	# Begin temporary pushing animation state for the pusher.
 	pushing_in_progress = true
 	push_started.emit(dir)
-	# Chain the player's step into the vacated cell once the target finishes moving.
-	var target_ga: Node = target.get_node_or_null("GridActor")
-	if target_ga != null:
-		# Use a deferred, one-shot connection to start the actor's move after the box finishes.
-		target_ga.move_finished.connect(
-			Callable(self, "_on_target_pushed").bind(to),
-			Object.CONNECT_DEFERRED | Object.CONNECT_ONE_SHOT
-		)
 	return true
 
-
-func _on_target_pushed(_pushed_to: Vector2i, vacated_cell: Vector2i) -> void:
-	print("[Pushing] ", actor.name, " stepping into vacated:", vacated_cell)
-	var player_ga: Node = actor.get_node_or_null("GridActor")
-	if player_ga == null or not player_ga.has_method("move_to"):
-		return
-	var world: Node = actor.get_parent()
-	if world == null:
-		return
-	# Clear the pushing animation state exactly when the player's move actually starts.
-	if player_ga.has_signal("move_started"):
-		player_ga.move_started.connect(
-			Callable(self, "_on_player_move_started"),
-			Object.CONNECT_DEFERRED | Object.CONNECT_ONE_SHOT
-		)
-	player_ga.call_deferred("move_to", vacated_cell, world)
-
-
-func _on_player_move_started(_from: Vector2i, _to: Vector2i) -> void:
-	pushing_in_progress = false
-	push_animation_release.emit()
+## Follow-up move is now scheduled by ActionScheduler; this node remains an execution helper.

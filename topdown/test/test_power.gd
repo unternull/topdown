@@ -7,11 +7,17 @@ const BOX_SCENE := preload("res://scenes/box.tscn")
 func _await_move_or_timeout(ga: Node, timeout_s: float = 5.0) -> void:
 	if ga == null:
 		return
+	# Allow scheduler to start actions
+	await get_tree().process_frame
 	var deadline: int = Time.get_ticks_msec() + int(timeout_s * 1000.0)
+	var seen_moving := false
 	while true:
 		var mv = ga.get("moving")
-		if typeof(mv) == TYPE_BOOL and not mv:
-			return
+		if typeof(mv) == TYPE_BOOL:
+			if mv:
+				seen_moving = true
+			elif seen_moving:
+				return
 		if Time.get_ticks_msec() >= deadline:
 			assert_true(false, "Movement did not finish before timeout")
 			return
